@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gökberk Terminal v1 | AI Meta-Brain Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- TEMA --- */
+        :root {
+            --bg-body: #05070a;
+            --bg-panel: #10141b;
+            --bg-hover: #1e2329;
+            --bg-input: #0b0e11;
+            --border-color: #2b3139;
+            --text-primary: #eaecef;
+            --text-secondary: #848e9c;
+            --accent-color: #f0b90b; 
+            --up-color: #0ecb81;
+            --down-color: #f6465d;
+            --info-bg: rgba(16, 20, 27, 0.95);
+            /* NEW VARIABLES */
+            --neon-blue: #00f2ff;
+            --neon-purple: #bc13fe;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --brain-gradient: linear-gradient(135deg, rgba(16, 20, 27, 1) 0%, rgba(20, 30, 40, 1) 100%);
+        }
+
+        body.light-mode {
+            --bg-body: #f3f4f6;
+            --bg-panel: #ffffff;
+            --bg-hover: #e5e7eb;
+            --bg-input: #f9fafb;
+            --border-color: #d1d5db;
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+            --accent-color: #d97706;
+            --up-color: #059669;
+            --down-color: #dc2626;
+            --info-bg: rgba(255, 255, 255, 0.95);
+            --glass-bg: rgba(0, 0, 0, 0.03);
+            --brain-gradient: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-body); 
+            color: var(--text-primary); 
+            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Helpers */
+        .bg-panel { background: var(--bg-panel); }
+        .text-dim { color: var(--text-secondary); }
+        .coin-item:hover { background: var(--bg-hover); }
+        .active-coin { background: var(--bg-hover); border-left: 3px solid var(--accent-color); }
+        .flow-bar { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* INTERACTIVE TERMS */
+        .info-term {
+            cursor: help;
+            border-bottom: 1px dotted var(--text-secondary);
+            transition: color 0.2s;
+        }
+        .info-term:hover { color: var(--accent-color); border-bottom-color: var(--accent-color); }
+
+        /* MODAL (INFO POPUP) */
+        #info-modal {
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(8px);
+        }
+        #info-content {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid var(--border-color);
+        }
+        #info-modal.active #info-content { transform: scale(1); }
+
+        /* TABS */
+        .tab-btn { 
+            padding: 10px 16px; font-size: 11px; font-weight: 700; 
+            color: var(--text-secondary); cursor: pointer; text-transform: uppercase; 
+            transition: 0.2s; border-bottom: 2px solid transparent; white-space: nowrap;
+        }
+        .tab-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .tab-btn.active { color: var(--accent-color); border-bottom-color: var(--accent-color); background: var(--bg-hover); }
+        .tab-content { display: none; height: 100%; width: 100%; flex-direction: column; }
+        .tab-content.active { display: flex; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+
+        /* Depth Bars */
+        .depth-row { display: flex; justify-content: space-between; padding: 2px 8px; font-size: 10px; font-family: 'JetBrains Mono', monospace; position: relative; z-index: 1; border-bottom: 1px solid rgba(128,128,128,0.05); }
+        .depth-bg-bid { position: absolute; right: 0; top: 1px; bottom: 1px; background: var(--up-color); opacity: 0.15; z-index: -1; transition: width 0.2s; }
+        .depth-bg-ask { position: absolute; right: 0; top: 1px; bottom: 1px; background: var(--down-color); opacity: 0.15; z-index: -1; transition: width 0.2s; }
+
+        /* --- STYLES v52 --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        @keyframes scan {
+            0% { top: -5%; opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { top: 105%; opacity: 0; }
+        }
+        .scan-line {
+            position: absolute; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+            opacity: 0; z-index: 20; pointer-events: none;
+            animation: scan 3s infinite ease-in-out;
+        }
+        .glow-text { text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        .pulse-dot {
+            box-shadow: 0 0 0 0 rgba(14, 203, 129, 0.7);
+            animation: pulse-green 2s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 203, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(14, 203, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(14, 203, 129, 0); }
+        }
+        .matrix-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px;
+            background: var(--border-color); padding: 1px; border-radius: 4px; overflow: hidden;
+        }
+        .matrix-cell {
+            background: var(--bg-panel); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 4px; font-size: 9px; text-align: center;
+        }
+
+        /* --- STYLES v53 (AI BRAIN) --- */
+        .ai-brain-panel {
+            background: var(--brain-gradient);
+            border: 1px solid var(--neon-purple);
+            box-shadow: 0 0 15px rgba(188, 19, 254, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .scenario-bar-container {
+            width: 100%; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; margin-top: 4px;
+        }
+        .scenario-fill { height: 100%; transition: width 0.8s ease; }
+        .term-link {
+            text-decoration: underline; text-decoration-style: dotted; text-decoration-color: var(--text-secondary);
+            cursor: help; color: var(--text-primary); transition: color 0.2s;
+        }
+        .term-link:hover { color: var(--neon-blue); text-decoration-color: var(--neon-blue); }
+        
+        @media (max-width: 768px) {
+            body { overflow-y: auto; height: auto; }
+            #layout { flex-direction: column; }
+            #sidebar { width: 100%; height: auto; max-height: 200px; border-right: none; border-bottom: 1px solid var(--border-color); }
+            #chart-container { height: 350px; min-height: 350px; }
+            #stats-bar { overflow-x: auto; padding-bottom: 10px; }
+            #bottom-panel { height: 650px; }
+            #info-content { width: 95%; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="h-12 border-b border-[var(--border-color)] bg-panel flex items-center justify-between px-4 shrink-0 shadow-sm z-50">
+        <div class="flex items-center gap-3">
+            <div class="flex flex-col leading-none">
+                <span class="text-[var(--text-primary)] font-black text-sm tracking-widest mono">Gökberk<span style="color:var(--neon-purple)">v1</span></span>
+                <span class="text-[9px] text-dim tracking-[0.2em] uppercase">AI Meta-Brain</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 text-[10px] mono font-bold text-dim">
+            <button onclick="toggleTheme()" class="p-2 rounded hover:bg-[var(--bg-hover)] transition-colors border border-[var(--border-color)]">
+                <span id="theme-icon" class="text-lg leading-none">☀️</span>
+            </button>
+            <div class="flex items-center gap-1.5 px-2 py-1 rounded border border-[var(--border-color)] bg-[var(--bg-input)]">
+                <div id="conn-status" class="w-2 h-2 rounded-full bg-red-500"></div>
+                <span id="conn-text">OFFLINE</span>
+            </div>
+            <div id="audio-btn" class="cursor-pointer hover:text-[var(--text-primary)] transition-colors px-2 py-1 rounded border border-[var(--border-color)] bg-[var(--bg-input)] flex items-center gap-1">
+                <span>🔇</span> SES
+            </div>
+            <div id="clock" style="color:var(--accent-color)">00:00:00</div>
+        </div>
+    </header>
+
+    <div id="layout" class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="w-[240px] bg-[var(--bg-body)] flex flex-col border-r border-[var(--border-color)] shrink-0 transition-colors">
+            <div class="p-3 border-b border-[var(--border-color)] bg-panel flex flex-col gap-2">
+                <div class="flex justify-between items-center text-[10px] text-dim font-bold uppercase">
+                    <span>PORTFÖY</span>
+                    <button onclick="addCoin()" class="text-[var(--up-color)] hover:brightness-110 bg-[var(--bg-hover)] px-2 py-0.5 rounded border border-[var(--border-color)] transition-colors">+</button>
+                </div>
+                <input type="text" id="coin-search" placeholder="ARA..." onkeyup="filterCoins()" 
+                    class="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-color)] rounded px-2 py-1.5 text-xs uppercase font-mono focus:outline-none focus:border-[var(--accent-color)]">
+            </div>
+            <div id="coin-list" class="flex-1 overflow-y-auto custom-scroll bg-[var(--bg-body)]"></div>
+        </aside>
+
+        <!-- Main Content -->
+        <section class="flex-1 flex flex-col min-w-0 bg-[var(--bg-body)] relative transition-colors">
+            
+            <!-- Coin Info Header & Money Flow -->
+            <div class="h-auto min-h-[50px] border-b border-[var(--border-color)] bg-panel flex flex-col shrink-0 transition-colors">
+                <div class="flex items-center justify-between px-4 py-2">
+                    <div class="flex items-center gap-4">
+                        <h1 id="sym-title" class="text-xl font-black text-[var(--text-primary)] tracking-tight glow-text">--</h1>
+                        <div class="flex flex-col">
+                            <span id="sym-price" class="text-sm mono font-bold text-[var(--text-primary)] leading-none">--</span>
+                            <span id="sym-change" class="text-[10px] mono font-bold text-dim leading-none mt-1">--</span>
+                        </div>
+                    </div>
+                    <div class="flex bg-[var(--bg-input)] rounded p-0.5 border border-[var(--border-color)]">
+                        <button onclick="setTf('15')" id="tf-15" class="text-[10px] font-bold text-dim px-3 py-1 hover:text-[var(--text-primary)] transition-all rounded-sm active active-coin">15m</button>
+                        <button onclick="setTf('60')" id="tf-60" class="text-[10px] font-bold text-dim px-3 py-1 hover:text-[var(--text-primary)] transition-all rounded-sm">1H</button>
+                        <button onclick="setTf('240')" id="tf-240" class="text-[10px] font-bold text-dim px-3 py-1 hover:text-[var(--text-primary)] transition-all rounded-sm">4H</button>
+                    </div>
+                </div>
+                <div class="px-4 pb-2">
+                    <div class="bg-[var(--bg-input)] border border-[var(--border-color)] rounded p-2 flex items-center justify-between gap-4">
+                        <div class="flex flex-col flex-1 items-start">
+                            <span class="text-[9px] text-dim uppercase font-bold mb-1 info-term" onclick="showInfo('MoneyFlow')">OTURUM ALIM ($)</span>
+                            <span id="flow-buy" class="text-xs font-mono font-bold text-[var(--up-color)]">$0</span>
+                            <div class="w-full h-1 bg-gray-800 rounded-full mt-1 overflow-hidden">
+                                <div id="flow-bar-buy" class="h-full bg-[var(--up-color)] flow-bar" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center px-2">
+                            <span class="text-[9px] text-dim uppercase info-term" onclick="showInfo('MoneyFlow')">NET FARK</span>
+                            <span id="flow-delta" class="text-sm font-black mono text-gray-500">$0</span>
+                        </div>
+                        <div class="flex flex-col flex-1 items-end">
+                            <span class="text-[9px] text-dim uppercase font-bold mb-1 info-term" onclick="showInfo('MoneyFlow')">OTURUM SATIM ($)</span>
+                            <span id="flow-sell" class="text-xs font-mono font-bold text-[var(--down-color)]">$0</span>
+                            <div class="w-full h-1 bg-gray-800 rounded-full mt-1 overflow-hidden">
+                                <div id="flow-bar-sell" class="h-full bg-[var(--down-color)] flow-bar" style="width: 50%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div id="chart-container" class="flex-1 bg-[var(--bg-body)] relative min-h-0 z-0 transition-colors"></div>
+
+            <!-- Dashboard Stats -->
+            <div id="stats-bar" class="h-auto min-h-[130px] bg-panel border-t border-b border-[var(--border-color)] flex shrink-0 p-3 gap-3 overflow-x-auto items-stretch shadow-sm transition-colors">
+                
+                <!-- AI Score (Enhanced) -->
+                <div class="flex-1 min-w-[240px] bg-[var(--bg-body)] border border-[var(--border-color)] rounded-lg p-3 flex flex-col justify-between relative overflow-hidden group">
+                    <div class="scan-line"></div> 
+                    <div class="flex justify-between items-center relative z-10">
+                        <span class="text-[10px] text-dim font-bold uppercase tracking-wider flex items-center gap-1 info-term" onclick="showInfo('QuantumScore')">
+                            <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse pulse-dot"></span> QUANTUM AI
+                        </span>
+                        <span id="q-score-val" class="text-lg font-black text-[var(--text-primary)] mono">--/100</span>
+                    </div>
+                    <div class="w-full h-2 bg-[var(--bg-hover)] rounded-full mt-2 overflow-hidden border border-[var(--border-color)]">
+                        <div id="q-score-bar" class="h-full bg-blue-500 transition-all duration-1000 relative" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-end justify-between mt-2 relative z-10">
+                        <div class="flex flex-col">
+                            <span id="ai-signal-text" class="text-xl font-black italic text-dim leading-none">ANALİZ EDİLİYOR</span>
+                            <span id="ai-conf-text" class="text-[10px] text-dim mt-1 opacity-70">Veri toplanıyor...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pivot Points -->
+                <div class="w-[180px] min-w-[180px] bg-[var(--bg-body)] border border-[var(--border-color)] rounded-lg p-2 flex flex-col justify-center text-[10px] mono">
+                    <div class="text-dim font-bold mb-1 text-center uppercase border-b border-[var(--border-color)] pb-1 info-term" onclick="showInfo('PIVOT')">GÜNLÜK PIVOT</div>
+                    <div class="flex justify-between py-0.5"><span style="color:var(--down-color)">R1:</span> <span id="piv-r1" class="text-[var(--text-primary)] font-bold text-[9px]">--</span></div>
+                    <div class="flex justify-between py-0.5"><span style="color:var(--accent-color)">PP:</span> <span id="piv-p" class="text-[var(--text-primary)] font-bold text-[9px]">--</span></div>
+                    <div class="flex justify-between py-0.5"><span style="color:var(--up-color)">S1:</span> <span id="piv-s1" class="text-[var(--text-primary)] font-bold text-[9px]">--</span></div>
+                </div>
+
+                <!-- Indicators -->
+                <div class="flex gap-2">
+                    <div class="w-24 bg-[var(--bg-body)] border border-[var(--border-color)] rounded-lg p-1 flex flex-col justify-center text-center">
+                        <span class="text-[9px] text-dim font-bold info-term" onclick="showInfo('MFI')">MFI (14)</span>
+                        <span id="stat-mfi" class="text-lg font-bold mono text-[var(--text-primary)] mt-1">--</span>
+                        <span id="stat-mfi-comment" class="text-[8px] text-dim uppercase">--</span>
+                    </div>
+                    <div class="w-24 bg-[var(--bg-body)] border border-[var(--border-color)] rounded-lg p-1 flex flex-col justify-center text-center">
+                        <span class="text-[9px] text-dim font-bold info-term" onclick="showInfo('CCI')">CCI</span>
+                        <span id="stat-cci" class="text-lg font-bold mono text-[var(--text-primary)] mt-1">--</span>
+                        <span id="stat-cci-comment" class="text-[8px] text-dim uppercase">--</span>
+                    </div>
+                    <!-- Volatility Widget -->
+                    <div class="w-24 bg-[var(--bg-body)] border border-[var(--border-color)] rounded-lg p-1 flex flex-col justify-center text-center relative overflow-hidden">
+                        <span class="text-[9px] text-dim font-bold info-term" onclick="showInfo('Volatility')">VOLATİLİTE</span>
+                        <span id="stat-vol" class="text-lg font-bold mono text-[var(--accent-color)] mt-1">--</span>
+                        <span id="stat-vol-comment" class="text-[8px] text-dim uppercase">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Tabs -->
+            <div id="bottom-panel" class="h-[450px] bg-[var(--bg-body)] flex flex-col shrink-0 transition-colors">
+                <div class="flex border-b border-[var(--border-color)] bg-panel overflow-x-auto shrink-0">
+                    <div class="tab-btn active" onclick="switchTab('analysis')">🧠 DETAYLI ANALİZ</div>
+                    <div class="tab-btn" onclick="switchTab('trades')">⚡ İŞLEMLER</div>
+                    <div class="tab-btn" onclick="switchTab('depth')">📊 DERİNLİK</div>
+                    <div class="tab-btn" style="color:var(--accent-color)" onclick="switchTab('calc')">🧮 RİSK HESAPLA</div>
+                </div>
+
+                <!-- ANALYSIS TAB -->
+                <div id="tab-analysis" class="tab-content active bg-[var(--bg-body)] p-3 overflow-y-auto custom-scroll">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+                        
+                        <!-- Technical Signal Card -->
+                        <div class="bg-panel border border-[var(--border-color)] p-4 rounded-lg shadow-sm">
+                            <h3 class="text-xs font-bold text-dim mb-4 uppercase tracking-wider flex items-center gap-2">
+                                <span class="text-[var(--accent-color)]">⚡</span> TEKNİK GÖSTERGELER (15dk)
+                            </h3>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-1">
+                                    <span class="text-dim info-term" onclick="showInfo('VWAP')">VWAP Durumu:</span>
+                                    <span id="ana-vwap" class="font-bold px-2 py-0.5 rounded">--</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-1">
+                                    <span class="text-dim info-term" onclick="showInfo('Fibonacci')">Fibonacci (0.618):</span>
+                                    <span id="ana-fib" class="font-bold">--</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-1">
+                                    <span class="text-dim info-term" onclick="showInfo('Ichimoku')">Ichimoku Bulutu:</span>
+                                    <span id="ana-ichi" class="font-bold">--</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-1">
+                                    <span class="text-dim info-term" onclick="showInfo('MACD')">MACD Kesişimi:</span>
+                                    <span id="ana-macd" class="font-bold">--</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-[var(--border-color)] pb-1">
+                                    <span class="text-dim info-term" onclick="showInfo('ADX')">Trend Gücü (ADX):</span>
+                                    <div class="flex items-center gap-2 w-24">
+                                        <div class="flex-1 h-1.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
+                                            <div id="ana-adx-bar" class="h-full bg-blue-500" style="width:0%"></div>
+                                        </div>
+                                        <span id="ana-adx" class="text-[9px] font-mono">--</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4 p-3 bg-[var(--bg-input)] rounded border border-[var(--border-color)] flex justify-between items-center">
+                                    <span class="text-[9px] text-dim uppercase info-term" onclick="showInfo('ATR')">ATR STOP (Güvenli)</span>
+                                    <span id="ana-stop" class="text-sm font-mono font-bold text-[var(--down-color)]">--</span>
+                                </div>
+
+                                <div class="mt-2 p-3 bg-[var(--bg-input)] rounded border border-[var(--border-color)] text-center">
+                                    <div class="text-[9px] text-dim uppercase mb-1">STRATEJİ ÖNERİSİ</div>
+                                    <div id="ana-advice" class="text-lg font-black tracking-wide text-[var(--text-primary)]">BEKLENİYOR</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Multi-Timeframe & Advanced Matrix -->
+                        <div class="flex flex-col gap-4">
+                            <div class="bg-panel border border-[var(--border-color)] p-4 rounded-lg shadow-sm flex flex-col">
+                                <h3 class="text-xs font-bold text-blue-400 mb-4 uppercase tracking-wider">⏳ ZAMAN MATRİSİ</h3>
+                                <div class="grid grid-cols-3 gap-2 flex-1">
+                                    <div class="bg-[var(--bg-body)] border border-[var(--border-color)] p-2 rounded flex flex-col items-center justify-center text-center">
+                                        <span class="text-[10px] text-dim font-bold mb-1">5m Scalp</span>
+                                        <div id="mtf-5m-trend" class="text-xs font-bold mb-1">--</div>
+                                        <div id="mtf-5m-rsi" class="text-[9px] mono text-dim">RSI: --</div>
+                                    </div>
+                                    <div class="bg-[var(--bg-body)] border border-[var(--border-color)] p-2 rounded flex flex-col items-center justify-center text-center">
+                                        <span class="text-[10px] text-dim font-bold mb-1">1h Swing</span>
+                                        <div id="mtf-1h-trend" class="text-xs font-bold mb-1">--</div>
+                                        <div id="mtf-1h-rsi" class="text-[9px] mono text-dim">RSI: --</div>
+                                    </div>
+                                    <div class="bg-[var(--bg-body)] border border-[var(--border-color)] p-2 rounded flex flex-col items-center justify-center text-center">
+                                        <span class="text-[10px] text-dim font-bold mb-1">4h Trend</span>
+                                        <div id="mtf-4h-trend" class="text-xs font-bold mb-1">--</div>
+                                        <div id="mtf-4h-rsi" class="text-[9px] mono text-dim">RSI: --</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Market Regime & Confluence -->
+                            <div class="bg-panel border border-[var(--border-color)] p-4 rounded-lg shadow-sm">
+                                <h3 class="text-xs font-bold text-purple-400 mb-3 uppercase tracking-wider">🔮 MARKET REJİMİ & KONFLUANS</h3>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="text-[10px] text-dim uppercase">Rejim:</div>
+                                    <div id="ext-regime" class="text-xs font-bold text-[var(--text-primary)] px-2 py-0.5 bg-[var(--bg-input)] rounded border border-[var(--border-color)]">ANALİZ...</div>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <div class="text-[9px] text-dim uppercase text-center mb-1">Sinyal Uyumu (Konfluans)</div>
+                                    <div class="matrix-grid">
+                                        <div class="matrix-cell">
+                                            <span class="text-[8px] text-dim">RSI</span>
+                                            <span id="conf-rsi" class="font-bold">--</span>
+                                        </div>
+                                        <div class="matrix-cell">
+                                            <span class="text-[8px] text-dim">MACD</span>
+                                            <span id="conf-macd" class="font-bold">--</span>
+                                        </div>
+                                        <div class="matrix-cell">
+                                            <span class="text-[8px] text-dim">MA Trend</span>
+                                            <span id="conf-ma" class="font-bold">--</span>
+                                        </div>
+                                        <div class="matrix-cell">
+                                            <span class="text-[8px] text-dim">Bollinger</span>
+                                            <span id="conf-bb" class="font-bold">--</span>
+                                        </div>
+                                        <div class="matrix-cell">
+                                            <span class="text-[8px] text-dim">Momentum</span>
+                                            <span id="conf-mom" class="font-bold">--</span>
+                                        </div>
+                                        <div class="matrix-cell">
+                                            <span class="text-[8px] text-dim">Hacim</span>
+                                            <span id="conf-vol" class="font-bold">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="flex justify-between text-[9px] text-dim mb-1">
+                                        <span>AYILAR</span>
+                                        <span>BOĞALAR</span>
+                                    </div>
+                                    <div class="w-full h-2 bg-[var(--bg-input)] rounded-full overflow-hidden flex">
+                                        <div id="sentiment-bear" class="h-full bg-[var(--down-color)] transition-all" style="width:50%"></div>
+                                        <div id="sentiment-bull" class="h-full bg-[var(--up-color)] transition-all" style="width:50%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- NEW: AI META BRAIN CONTAINER -->
+                    <div id="ai-meta-analysis-container" class="mt-4 w-full">
+                        <!-- Content injected via JS -->
+                    </div>
+
+                </div>
+
+                <!-- TRADES TAB -->
+                <div id="tab-trades" class="tab-content bg-[var(--bg-body)]">
+                    <div class="flex justify-between px-4 py-2 text-[9px] font-bold text-dim border-b border-[var(--border-color)] bg-panel uppercase tracking-wider">
+                        <span>Fiyat</span> <span>Tutar (USD)</span> <span>Saat</span>
+                    </div>
+                    <div id="trade-list" class="flex-1 overflow-y-auto custom-scroll p-0"></div>
+                </div>
+
+                <!-- DEPTH TAB -->
+                <div id="tab-depth" class="tab-content flex-row bg-[var(--bg-body)]">
+                    <div class="flex-1 flex flex-col border-r border-[var(--border-color)]">
+                        <div class="p-1.5 text-center text-[9px] font-bold text-[var(--up-color)] bg-panel border-b border-[var(--border-color)]">BIDS (Alıcı)</div>
+                        <div id="depth-bids" class="flex-1 overflow-y-auto custom-scroll pt-1"></div>
+                    </div>
+                    <div class="flex-1 flex flex-col">
+                        <div class="p-1.5 text-center text-[9px] font-bold text-[var(--down-color)] bg-panel border-b border-[var(--border-color)]">ASKS (Satıcı)</div>
+                        <div id="depth-asks" class="flex-1 overflow-y-auto custom-scroll pt-1"></div>
+                    </div>
+                </div>
+
+                <!-- CALCULATOR TAB -->
+                <div id="tab-calc" class="tab-content bg-[var(--bg-body)] p-4 justify-center items-start overflow-y-auto">
+                    <div class="w-full max-w-md bg-panel border border-[var(--border-color)] p-5 rounded-lg shadow-lg">
+                        <h3 class="text-sm font-bold mb-4 flex items-center gap-2" style="color:var(--accent-color)">
+                            🧮 POZİSYON HESAPLAMA
+                        </h3>
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div><label class="text-[10px] text-dim block mb-1 uppercase font-bold">Bakiye ($)</label><input type="number" id="calc-balance" value="1000" class="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-color)] rounded p-2 text-xs"></div>
+                            <div><label class="text-[10px] text-dim block mb-1 uppercase font-bold">Risk (%)</label><input type="number" id="calc-risk" value="2" class="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-color)] rounded p-2 text-xs"></div>
+                            <div><label class="text-[10px] text-dim block mb-1 uppercase font-bold">Giriş</label><input type="number" id="calc-entry" class="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-color)] rounded p-2 text-xs"></div>
+                            <div><label class="text-[10px] text-dim block mb-1 uppercase font-bold">Stop</label><input type="number" id="calc-stop" class="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-color)] rounded p-2 text-xs"></div>
+                            <div class="col-span-2"><label class="text-[10px] text-dim block mb-1 uppercase font-bold">Kaldıraç (Opsiyonel - Sadece Bilgi)</label><input type="number" id="calc-lev" value="10" class="w-full bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-color)] rounded p-2 text-xs"></div>
+                        </div>
+                        <button onclick="calculateRisk()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-2.5 rounded text-xs font-bold mb-4 transition-colors uppercase">HESAPLA</button>
+                        <div id="calc-result" class="hidden bg-[var(--bg-input)] p-3 rounded border border-[var(--border-color)]">
+                            <div class="flex justify-between text-xs mb-1"><span class="text-dim">Risk:</span><span class="text-[var(--down-color)] font-bold" id="res-risk-usd">$0</span></div>
+                            <div class="flex justify-between text-xs mb-1"><span class="text-dim">Miktar:</span><span class="text-[var(--text-primary)] font-bold" id="res-qty">0</span></div>
+                            <div class="flex justify-between text-base border-t border-[var(--border-color)] pt-2 mt-2"><span class="text-dim font-bold">Pozisyon:</span><span style="color:var(--accent-color)" class="font-bold" id="res-total">$0</span></div>
+                            <div class="text-[9px] text-dim mt-2 text-center italic" id="res-note"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Whale Alert -->
+            <div id="whale-alert-container" class="fixed bottom-20 right-5 z-[999] flex flex-col gap-3 pointer-events-none w-[320px]"></div>
+
+            <!-- INFO MODAL -->
+            <div id="info-modal" class="fixed inset-0 z-[1000] flex items-center justify-center opacity-0 pointer-events-none" style="background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+                <div id="info-content" class="bg-[var(--info-bg)] p-6 rounded-lg w-[90%] max-w-[400px] shadow-2xl relative text-[var(--text-primary)]">
+                    <button onclick="closeInfo()" class="absolute top-2 right-3 text-dim hover:text-[var(--text-primary)] text-xl">&times;</button>
+                    <h3 id="info-title" class="text-lg font-black text-[var(--accent-color)] mb-3 border-b border-[var(--border-color)] pb-2">BAŞLIK</h3>
+                    <p id="info-desc" class="text-sm leading-relaxed">Açıklama buraya gelecek...</p>
+                    <div class="mt-4 pt-2 text-[10px] text-dim italic">Quantum Academy v53</div>
+                </div>
+            </div>
+
+        </section>
+    </div>
+
+    <script>
+        const defaultConfig = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "PEPEUSDT", "SHIBUSDT", "BONKUSDT", "DOGEUSDT", "WIFUSDT", "ADAUSDT"];
+        const config = { symbols: [...defaultConfig], throttleInterval: 300 };
+        const sessionStats = { buyVol: 0, sellVol: 0 };
+        const state = { currentSym: null, currentTf: "15", wsTicker: null, wsActive: null, audioCtx: null, tradeBuffer: [], isPageVisible: true, theme: localStorage.getItem('quantumTheme') || 'dark' };
+
+        // --- DEFINITIONS (SÖZLÜK) ---
+        const definitions = {
+            "QuantumScore": "Yapay Zeka Destekli Skor.\n\nRSI, MACD, VWAP, MFI, Bollinger, Ichimoku ve Fibonacci verilerini birleştirerek 0-100 arası bir puan üretir. 75+ Güçlü Al, 25- Güçlü Sat sinyalidir.",
+            "VWAP": "Hacim Ağırlıklı Ortalama Fiyat.\n\nFiyat VWAP'ın üzerindeyse alıcılar güçlü ve trend pozitiftir (Boğa). Fiyat altındaysa satıcılar baskındır (Ayı). Kurumsal yatırımcılar bu seviyeyi 'adil fiyat' olarak görür.",
+            "MACD": "Trend Takip Göstergesi.\n\nMACD çizgisi (Hızlı), Sinyal çizgisini (Yavaş) yukarı keserse 'AL', aşağı keserse 'SAT' sinyali üretir. Histogramın 0 üstünde olması yükseliş gücünü teyit eder.",
+            "CCI": "Emtia Kanal Endeksi.\n\nFiyatın ortalamadan ne kadar saptığını gösterir. +100 üzeri aşırı alım (düzeltme gelebilir), -100 altı aşırı satım (tepki gelebilir) bölgesidir.",
+            "ADX": "Trend Gücü Endeksi.\n\nADX, trendin yönünü değil, GÜCÜNÜ ölçer.\n0-20: Zayıf Trend (Yatay Piyasa)\n20-40: Güçlenen Trend\n40+: Çok Güçlü Trend (İşleme girmek için ideal).",
+            "Fibonacci": "Fibonacci Düzeltme Seviyeleri.\n\nSon 200 mumun en düşük ve en yüksek noktası arası ölçülür. 0.618 (Altın Oran) en güçlü destek/dirençtir. Fiyat bu seviyeye çekilip tepki verirse işleme girilir.",
+            "Ichimoku": "Ichimoku Bulutu.\n\nJapon trend indikatörüdür. Eğer 'Tenkan-sen' (Hızlı) çizgisi 'Kijun-sen' (Yavaş) çizgisinin üzerindeyse trend yükseliştir (Boğa). Tam tersi düşüşü (Ayı) gösterir.",
+            "ATR": "Ortalama Gerçek Aralık (Volatilite).\n\nFiyatın ortalama ne kadar hareket ettiğini gösterir. Stop-loss için mükemmeldir. Giriş fiyatından (2 x ATR) kadar uzaklaşmak, gürültüden etkilenmemenizi sağlar.",
+            "MFI": "Para Akış Endeksi (Hacimli RSI).\n\nRSI'a benzer ama hacmi de hesaba katar. Fiyat yükselirken MFI düşüyorsa (Uyumsuzluk), akıllı para piyasadan çıkıyor olabilir.",
+            "PIVOT": "Pivot Noktaları.\n\nÖnceki günün Yüksek, Düşük ve Kapanış fiyatlarına göre hesaplanır. P (Pivot) ana denge noktasıdır. Üstünde R1 direnci, altında S1 desteği bulunur.",
+            "MoneyFlow": "Canlı Para Akışı.\n\nSiz bu sayfayı açtığınızdan beri gerçekleşen tüm alım ve satım emirlerinin dolar bazında toplamıdır. Yeşil bar alıcıların, Kırmızı bar satıcıların baskınlığını gösterir.",
+            "Volatility": "Piyasa Oynaklık Durumu.\n\nFiyatların sıkışıp sıkışmadığını (Squeeze) veya trendin patlama yapıp yapmadığını ölçer. Düşük volatilite genellikle büyük bir hareketin habercisidir."
+        };
+
+        function showInfo(key) {
+            const modal = document.getElementById('info-modal');
+            const title = document.getElementById('info-title');
+            const desc = document.getElementById('info-desc');
+            const def = definitions[key] || "Bilgi bulunamadı.";
+            title.innerText = key; desc.innerText = def;
+            modal.classList.remove('pointer-events-none', 'opacity-0'); modal.classList.add('active');
+        }
+        function closeInfo() {
+            const modal = document.getElementById('info-modal');
+            modal.classList.add('pointer-events-none', 'opacity-0'); modal.classList.remove('active');
+        }
+        document.getElementById('info-modal').addEventListener('click', (e) => { if(e.target.id === 'info-modal') closeInfo(); });
+
+        // --- FORMATTERS ---
+        function formatPrice(price) {
+            price = parseFloat(price);
+            if(price < 0.0001) return price.toFixed(8); 
+            if(price < 1) return price.toFixed(6);      
+            if(price < 10) return price.toFixed(4);     
+            return price.toFixed(2);                    
+        }
+        const usdFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+        // --- CORE ---
+        function initTheme() {
+            const body = document.body; const icon = document.getElementById('theme-icon');
+            if(state.theme === 'light') { body.classList.add('light-mode'); icon.innerText = '🌙'; } 
+            else { body.classList.remove('light-mode'); icon.innerText = '☀️'; }
+        }
+        function toggleTheme() {
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('quantumTheme', state.theme); initTheme();
+            if(state.currentSym) loadChart(state.currentSym);
+        }
+        function init() {
+            initTheme();
+            const saved = localStorage.getItem('quantumPortfolio_v51');
+            if(saved) try { config.symbols = JSON.parse(saved); } catch(e){}
+            renderCoinList();
+            document.addEventListener("visibilitychange", () => {
+                state.isPageVisible = !document.hidden;
+                if(state.isPageVisible && state.currentSym) { loadChart(state.currentSym); fetchAIHistory(state.currentSym); }
+            });
+            startTickerWS();
+            setInterval(processTradeBuffer, config.throttleInterval);
+            setInterval(() => document.getElementById('clock').innerText = new Date().toLocaleTimeString('tr-TR'), 1000);
+            setTimeout(() => selectCoin(config.symbols[0]), 500);
+        }
+
+        // --- COIN LIST & SELECTION ---
+        function renderCoinList(filterText = "") {
+            const listEl = document.getElementById('coin-list'); listEl.innerHTML = "";
+            config.symbols.forEach(s => {
+                if(filterText && !s.includes(filterText.toUpperCase())) return;
+                const isActive = (s === state.currentSym);
+                const el = document.createElement('div');
+                el.className = `coin-item flex justify-between items-center p-3 border-b border-[var(--border-color)] cursor-pointer transition-all ${isActive ? 'active-coin' : ''}`;
+                el.onclick = () => selectCoin(s);
+                el.innerHTML = `<div class="flex flex-col"><span class="font-bold text-xs ${isActive?'text-[var(--text-primary)]':'text-dim'}">${s.replace('USDT','')}</span></div><div class="text-right"><div id="p-${s}" class="text-[11px] mono text-[var(--text-primary)] font-bold">--</div><div id="c-${s}" class="text-[9px] font-bold opacity-80">--</div></div>`;
+                listEl.appendChild(el);
+            });
+        }
+        function selectCoin(sym) {
+            if(state.currentSym === sym) return;
+            state.currentSym = sym;
+            renderCoinList(document.getElementById('coin-search').value);
+            document.getElementById('sym-title').innerText = sym.replace('USDT','');
+            sessionStats.buyVol = 0; sessionStats.sellVol = 0; updateSessionUI();
+            document.getElementById('calc-entry').value = ""; document.getElementById('calc-result').classList.add('hidden');
+            loadChart(sym); startActiveWS(sym); fetchAIHistory(sym);
+        }
+        function updateSessionUI() {
+            const total = sessionStats.buyVol + sessionStats.sellVol;
+            const buyPct = total > 0 ? (sessionStats.buyVol / total) * 100 : 50;
+            const delta = sessionStats.buyVol - sessionStats.sellVol;
+            document.getElementById('flow-buy').innerText = usdFmt.format(sessionStats.buyVol);
+            document.getElementById('flow-sell').innerText = usdFmt.format(sessionStats.sellVol);
+            const elDelta = document.getElementById('flow-delta');
+            elDelta.innerText = (delta > 0 ? "+" : "") + usdFmt.format(delta);
+            elDelta.style.color = delta >= 0 ? "var(--up-color)" : "var(--down-color)";
+            document.getElementById('flow-bar-buy').style.width = `${buyPct}%`;
+            document.getElementById('flow-bar-sell').style.width = `${100-buyPct}%`;
+        }
+
+        // --- ADVANCED ANALYSIS ---
+        async function fetchAIHistory(sym) {
+            ['ana-vwap','ana-macd','ana-fib','ana-ichi','ana-advice'].forEach(id => { document.getElementById(id).innerHTML = `<span class="animate-pulse opacity-50">...</span>`; });
+            const intervals = ['5m', '15m', '1h', '4h', '1d'];
+            try {
+                const responses = await Promise.all(intervals.map(tf => fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}&interval=${tf}&limit=200`).then(r => r.json())));
+                const data = { '5m': analyzeCandles(responses[0]), '15m': analyzeCandles(responses[1]), '1h': analyzeCandles(responses[2]), '4h': analyzeCandles(responses[3]), '1d': responses[4] };
+                if(data['1d']) {
+                    const lastD = data['1d'][data['1d'].length - 2];
+                    const h = parseFloat(lastD[2]), l = parseFloat(lastD[3]), c = parseFloat(lastD[4]);
+                    const p = (h+l+c)/3;
+                    document.getElementById('piv-p').innerText = formatPrice(p);
+                    document.getElementById('piv-r1').innerText = formatPrice((2*p)-l);
+                    document.getElementById('piv-s1').innerText = formatPrice((2*p)-h);
+                }
+                calculateQuantumDecision(data);
+                if(data['5m']) {
+                     const entry = data['5m'].price;
+                     document.getElementById('calc-entry').value = entry;
+                     if(data['15m']) {
+                         const stopPrice = entry - (data['15m'].atr * 2);
+                         document.getElementById('calc-stop').value = formatPrice(stopPrice);
+                         document.getElementById('ana-stop').innerText = formatPrice(stopPrice);
+                     }
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function calculateSMA(data, period) { if(data.length < period) return null; let sum = 0; for(let i=data.length-period;i<data.length;i++) sum+=data[i]; return sum/period; }
+        function calculateEMA(data, period) { if(data.length < period) return null; const k = 2/(period+1); let ema = data[0]; for(let i=1;i<data.length;i++) ema=(data[i]*k)+(ema*(1-k)); return ema; }
+        function calculateRSI(closes, period=14) { let gains=0, losses=0; for(let i=closes.length-period;i<closes.length;i++) { const diff=closes[i]-closes[i-1]; if(diff>=0) gains+=diff; else losses-=diff; } return 100-(100/(1+(gains/(losses||1)))); }
+        function calculateVWAP(highs, lows, closes, volumes) { let cv=0, cvp=0; for(let i=0;i<closes.length;i++) { const tp=(highs[i]+lows[i]+closes[i])/3; cv+=volumes[i]; cvp+=(tp*volumes[i]); } return cvp/cv; }
+        function calculateCCI(highs, lows, closes, period=20) { const tp=closes.map((c,i)=>(highs[i]+lows[i]+c)/3); const smaTp=calculateSMA(tp,period); let md=0; for(let i=tp.length-period;i<tp.length;i++) md+=Math.abs(tp[i]-smaTp); return (tp[tp.length-1]-smaTp)/(0.015*(md/period)); }
+        function calculateATR(highs, lows, closes) { let trSum=0; for(let i=closes.length-14;i<closes.length;i++) trSum+=Math.max(highs[i]-lows[i], Math.abs(highs[i]-closes[i-1]), Math.abs(lows[i]-closes[i-1])); return trSum/14; }
+        function calculateMFI(highs, lows, closes, volumes) { let pf=0, nf=0; for(let i=closes.length-14;i<closes.length;i++) { const tp=(highs[i]+lows[i]+closes[i])/3, ptp=(highs[i-1]+lows[i-1]+closes[i-1])/3; if(tp>ptp) pf+=tp*volumes[i]; else if(tp<ptp) nf+=tp*volumes[i]; } return 100-(100/(1+(pf/(nf||1)))); }
+        
+        function calculateFibonacci(highs, lows) {
+            const maxH = Math.max(...highs), minL = Math.min(...lows);
+            const diff = maxH - minL;
+            return {
+                l0: minL, l1: maxH,
+                l236: maxH - (diff * 0.236),
+                l382: maxH - (diff * 0.382),
+                l500: maxH - (diff * 0.5),
+                l618: maxH - (diff * 0.618)
+            };
+        }
+        
+        function calculateIchimoku(highs, lows) {
+            const tenkan = (Math.max(...highs.slice(-9)) + Math.min(...lows.slice(-9))) / 2;
+            const kijun = (Math.max(...highs.slice(-26)) + Math.min(...lows.slice(-26))) / 2;
+            return { tenkan, kijun, signal: tenkan > kijun ? "BULL" : "BEAR" };
+        }
+
+        function calculateBollinger(closes, period=20, stdDev=2) {
+            if (closes.length < period) return null;
+            const sma = calculateSMA(closes, period);
+            const slice = closes.slice(closes.length - period);
+            const variance = slice.reduce((a, b) => a + Math.pow(b - sma, 2), 0) / period;
+            const dev = Math.sqrt(variance);
+            return {
+                upper: sma + (dev * stdDev),
+                middle: sma,
+                lower: sma - (dev * stdDev),
+                width: ((sma + (dev * stdDev)) - (sma - (dev * stdDev))) / sma
+            };
+        }
+
+        function analyzeCandles(klines) {
+            if(!klines || klines.length < 200) return null;
+            const c=klines.map(k=>parseFloat(k[4])), h=klines.map(k=>parseFloat(k[2])), l=klines.map(k=>parseFloat(k[3])), v=klines.map(k=>parseFloat(k[5]));
+            return {
+                rsi: calculateRSI(c), mfi: calculateMFI(h,l,c,v), vwap: calculateVWAP(h,l,c,v),
+                cci: calculateCCI(h,l,c), adx: (calculateATR(h,l,c)/c[c.length-1])*1000, atr: calculateATR(h,l,c),
+                fib: calculateFibonacci(h,l), ichi: calculateIchimoku(h,l),
+                bb: calculateBollinger(c),
+                macdLine: calculateEMA(c,12)-calculateEMA(c,26),
+                trend: c[c.length-1] > calculateSMA(c,20) ? "Yükseliş" : "Düşüş",
+                price: c[c.length-1],
+                closes: c
+            };
+        }
+
+        function updateConfluenceUI(d15) {
+            const adx = d15.adx;
+            const bbWidth = d15.bb ? d15.bb.width * 100 : 0;
+            const regimeEl = document.getElementById('ext-regime');
+            
+            let regimeText = "YATAY (RANGE)";
+            let regimeColor = "text-dim";
+            
+            if (adx > 25) {
+                regimeText = d15.trend === "Yükseliş" ? "TREND (BOĞA)" : "TREND (AYI)";
+                regimeColor = d15.trend === "Yükseliş" ? "text-[var(--up-color)]" : "text-[var(--down-color)]";
+            } else if (bbWidth < 1.5) {
+                regimeText = "SIKIŞMA (SQUEEZE)";
+                regimeColor = "text-[var(--accent-color)]";
+            }
+            
+            regimeEl.innerText = regimeText;
+            regimeEl.className = `text-xs font-bold px-2 py-0.5 bg-[var(--bg-input)] rounded border border-[var(--border-color)] ${regimeColor}`;
+
+            const volEl = document.getElementById('stat-vol');
+            const volComm = document.getElementById('stat-vol-comment');
+            volEl.innerText = bbWidth.toFixed(2) + "%";
+            if(bbWidth < 1.0) { volEl.style.color = "var(--accent-color)"; volComm.innerText = "PATLAMA HAZIRLIĞI"; }
+            else if(bbWidth > 5.0) { volEl.style.color = "var(--text-primary)"; volComm.innerText = "YÜKSEK VOLATİLİTE"; }
+            else { volEl.style.color = "var(--text-secondary)"; volComm.innerText = "NORMAL"; }
+
+            const setCell = (id, val, bullCond, bearCond) => {
+                const el = document.getElementById(id);
+                el.innerText = val;
+                if(bullCond) el.style.color = "var(--up-color)";
+                else if(bearCond) el.style.color = "var(--down-color)";
+                else el.style.color = "var(--text-secondary)";
+                return bullCond ? 1 : (bearCond ? -1 : 0);
+            };
+
+            let bullScore = 0, bearScore = 0;
+            const rsiSc = setCell('conf-rsi', d15.rsi.toFixed(0), d15.rsi > 55, d15.rsi < 45);
+            if(rsiSc > 0) bullScore++; else if(rsiSc < 0) bearScore++;
+            const macdSc = setCell('conf-macd', d15.macdLine > 0 ? "AL" : "SAT", d15.macdLine > 0, d15.macdLine < 0);
+            if(macdSc > 0) bullScore++; else if(macdSc < 0) bearScore++;
+            const maSc = setCell('conf-ma', d15.trend === "Yükseliş" ? "YUKARI" : "AŞAĞI", d15.trend === "Yükseliş", d15.trend === "Düşüş");
+            if(maSc > 0) bullScore++; else if(maSc < 0) bearScore++;
+            const bbSc = setCell('conf-bb', d15.price > d15.bb.middle ? "ÜST" : "ALT", d15.price > d15.bb.middle, d15.price < d15.bb.middle);
+            if(bbSc > 0) bullScore++; else if(bbSc < 0) bearScore++;
+            const mom = d15.price - d15.closes[d15.closes.length-5];
+            const momSc = setCell('conf-mom', mom > 0 ? "POZ" : "NEG", mom > 0, mom < 0);
+            if(momSc > 0) bullScore++; else if(momSc < 0) bearScore++;
+            const volSc = setCell('conf-vol', d15.mfi > 50 ? "GİRİŞ" : "ÇIKIŞ", d15.mfi > 50, d15.mfi < 50);
+            if(volSc > 0) bullScore++; else if(volSc < 0) bearScore++;
+
+            const total = bullScore + bearScore || 1;
+            const bullPct = (bullScore / total) * 100;
+            const bearPct = (bearScore / total) * 100;
+            document.getElementById('sentiment-bull').style.width = `${bullPct}%`;
+            document.getElementById('sentiment-bear').style.width = `${bearPct}%`;
+        }
+
+        function calculateQuantumDecision(data) {
+            const d15 = data['15m']; if(!d15) return;
+            let score = 50;
+            if(d15.price > d15.vwap) score += 10; else score -= 10;
+            if(d15.mfi < 20) score += 10; else if(d15.mfi > 80) score -= 10;
+            if(d15.rsi < 30) score += 10; else if(d15.rsi > 70) score -= 10;
+            if(d15.ichi.signal === 'BULL') score += 10; else score -= 10;
+            if(d15.price > d15.fib.l618 && d15.price < d15.fib.l500) score += 5; 
+            if(d15.macdLine > 0) score += 5; else score -= 5;
+            
+            if (d15.bb && d15.price > d15.bb.upper) score -= 5;
+            if (d15.bb && d15.price < d15.bb.lower) score += 5;
+            
+            score = Math.max(0, Math.min(100, score));
+            const bar = document.getElementById('q-score-bar'); bar.style.width = `${score}%`;
+            let color="bg-gray-500", text="NÖTR", conf="Piyasa Kararsız", tC="text-dim";
+            if(score>=75) { color="bg-[var(--up-color)]"; text="GÜÇLÜ AL"; conf="VWAP + Ichimoku Boğa"; tC="text-[var(--up-color)]"; }
+            else if(score>=60) { color="bg-blue-500"; text="ALIM YÖNLÜ"; conf="Trend Pozitif"; tC="text-blue-500"; }
+            else if(score<=25) { color="bg-[var(--down-color)]"; text="GÜÇLÜ SAT"; conf="VWAP Altı + Ichimoku Ayı"; tC="text-[var(--down-color)]"; }
+            else if(score<=40) { color="bg-orange-500"; text="SATIŞ YÖNLÜ"; conf="Trend Zayıf"; tC="text-orange-500"; }
+
+            bar.className = `h-full transition-all duration-1000 ${color}`;
+            document.getElementById('q-score-val').innerText = score.toFixed(0); document.getElementById('q-score-val').className = `text-lg font-black mono ${tC} glow-text`;
+            document.getElementById('ana-advice').innerText = text; document.getElementById('ana-advice').className = `text-lg font-black tracking-wide ${tC}`;
+            document.getElementById('ai-conf-text').innerText = conf;
+
+            document.getElementById('stat-mfi').innerText = d15.mfi.toFixed(0); document.getElementById('stat-mfi-comment').innerText = d15.mfi>80?"O.BOUGHT":d15.mfi<20?"O.SOLD":"MID";
+            document.getElementById('stat-cci').innerText = d15.cci.toFixed(0); document.getElementById('stat-cci-comment').innerText = d15.cci>100?"O.BOUGHT":d15.cci<-100?"O.SOLD":"MID";
+            
+            const vwapDiff = ((d15.price - d15.vwap) / d15.vwap) * 100;
+            document.getElementById('ana-vwap').innerText = `${d15.price > d15.vwap ? 'ÜSTÜNDE' : 'ALTINDA'} (%${Math.abs(vwapDiff).toFixed(2)})`;
+            document.getElementById('ana-vwap').className = d15.price > d15.vwap ? "font-bold text-[var(--up-color)]" : "font-bold text-[var(--down-color)]";
+            document.getElementById('ana-macd').innerText = d15.macdLine > 0 ? "POZİTİF" : "NEGATİF";
+            document.getElementById('ana-macd').className = d15.macdLine > 0 ? "font-bold text-[var(--up-color)]" : "font-bold text-[var(--down-color)]";
+            document.getElementById('ana-adx-bar').style.width = `${Math.min(100, d15.adx * 3)}%`; document.getElementById('ana-adx').innerText = d15.adx.toFixed(1);
+            
+            document.getElementById('ana-ichi').innerText = d15.ichi.signal === 'BULL' ? "YÜKSELİŞ (Bulut Üstü)" : "DÜŞÜŞ (Bulut Altı)";
+            document.getElementById('ana-ichi').className = d15.ichi.signal === 'BULL' ? "font-bold text-[var(--up-color)]" : "font-bold text-[var(--down-color)]";
+            
+            document.getElementById('ana-fib').innerText = formatPrice(d15.fib.l618);
+
+            ['5m','1h','4h'].forEach(tf => {
+                const d = data[tf]; if(d) {
+                    const el = document.getElementById(`mtf-${tf}-trend`);
+                    el.innerText = d.trend; el.className = `text-xs font-bold mb-1 ${d.trend==='Yükseliş'?'text-[var(--up-color)]':'text-[var(--down-color)]'}`;
+                    document.getElementById(`mtf-${tf}-rsi`).innerText = `RSI: ${d.rsi.toFixed(0)}`;
+                }
+            });
+
+            updateConfluenceUI(d15);
+            
+            // --- NEW: AI META BRAIN CALL ---
+            runDeepMetaAnalysis(d15, score);
+        }
+
+        // --- NEW: AI META-BRAIN ENGINE (v53) ---
+        function runDeepMetaAnalysis(d, qScore) {
+            const container = document.getElementById('ai-meta-analysis-container');
+            if(!d) return;
+
+            // 1. Helper for Contextual Explanations
+            const getTermContext = (term, val, extra = "") => {
+                let text = "";
+                let status = "neutral";
+                if(term === 'RSI') {
+                    if(val > 70) { text = `RSI ${val.toFixed(0)} seviyesinde (Aşırı Alım). Fiyat çok hızlı yükseldi, düzeltme riski yüksek.`; status="bear"; }
+                    else if(val < 30) { text = `RSI ${val.toFixed(0)} seviyesinde (Aşırı Satım). Fiyat çok düştü, tepki yükselişi gelebilir.`; status="bull"; }
+                    else { text = `RSI ${val.toFixed(0)} ile nötr bölgede. Trend yönüne sadık kalınabilir.`; }
+                } else if(term === 'VWAP') {
+                    const diff = ((d.price - d.vwap)/d.vwap)*100;
+                    if(diff > 0) { text = `Fiyat VWAP'ın %${diff.toFixed(2)} üzerinde. Alıcılar piyasaya hakim.`; status="bull"; }
+                    else { text = `Fiyat VWAP'ın altında. Satıcılar kontrolü elinde tutuyor.`; status="bear"; }
+                } else if(term === 'ADX') {
+                    if(val > 40) { text = `ADX ${val.toFixed(0)}. Çok güçlü bir trend var, tersine işlem açmak tehlikeli.`; }
+                    else if(val < 20) { text = `ADX ${val.toFixed(0)}. Piyasa yatay (range), trend takibi yerine destek/direnç ticareti yapılmalı.`; }
+                    else { text = `ADX ${val.toFixed(0)}. Trend oluşumu başlıyor olabilir.`; }
+                } else if(term === 'MACD') {
+                    if(d.macdLine > 0) { text = "MACD pozitif bölgede, momentum yukarı yönlü."; status="bull"; }
+                    else { text = "MACD negatif bölgede, düşüş momentumu hakim."; status="bear"; }
+                } else if(term === 'Volatility') {
+                    const bbW = d.bb ? d.bb.width * 100 : 0;
+                    if(bbW < 1.5) text = "Volatilite çok düşük (Sıkışma). Büyük bir patlama yaklaşıyor olabilir.";
+                    else text = "Volatilite normal seviyelerde.";
+                }
+                return { text, status };
+            };
+
+            const genTermLink = (name, val) => {
+                const ctx = getTermContext(name, val);
+                return `<span class="term-link" onclick="showInfo('${name}')" title="${ctx.text}">${name}</span>`;
+            };
+
+            // 2. Scenario Probability Engine
+            let bullW = 0, bearW = 0, rangeW = 0, fakeW = 0;
+            
+            // Bullish Factors
+            if(d.price > d.vwap) bullW += 2;
+            if(d.macdLine > 0) bullW += 1.5;
+            if(d.rsi > 50 && d.rsi < 70) bullW += 1;
+            if(d.ichi.signal === 'BULL') bullW += 2;
+            if(d.trend === 'Yükseliş') bullW += 2;
+
+            // Bearish Factors
+            if(d.price < d.vwap) bearW += 2;
+            if(d.macdLine < 0) bearW += 1.5;
+            if(d.rsi < 50 && d.rsi > 30) bearW += 1;
+            if(d.ichi.signal === 'BEAR') bearW += 2;
+            if(d.trend === 'Düşüş') bearW += 2;
+
+            // Range Factors
+            if(d.adx < 20) rangeW += 3;
+            if(d.bb && (d.bb.width*100) < 2) rangeW += 2;
+            if(d.mfi > 40 && d.mfi < 60) rangeW += 1;
+
+            // Fakeout Factors (Divergence approximation)
+            if(d.price > d.bb.upper && d.mfi < 50) fakeW += 3; // Price up, Volume down
+            if(d.price < d.bb.lower && d.mfi > 50) fakeW += 3; // Price down, Volume up (absorption)
+
+            const totalW = bullW + bearW + rangeW + fakeW + 0.1;
+            const probs = {
+                bull: (bullW/totalW)*100,
+                bear: (bearW/totalW)*100,
+                range: (rangeW/totalW)*100,
+                fake: (fakeW/totalW)*100
+            };
+
+            // 3. Confluence & Confidence
+            let confScore = 0;
+            if((bullW > 3 && bearW < 1) || (bearW > 3 && bullW < 1)) confScore = 90; // Strong trend
+            else if(rangeW > 3) confScore = 60; // Clear range
+            else confScore = 30; // Confusing market
+            
+            let confidence = confScore > 75 ? "YÜKSEK" : (confScore > 50 ? "ORTA" : "DÜŞÜK");
+            let confColor = confScore > 75 ? "text-[var(--up-color)]" : (confScore > 50 ? "text-[var(--accent-color)]" : "text-[var(--down-color)]");
+
+            // 4. Trader Profile
+            let profile = "BEKLE / NAKİT";
+            if(probs.range > 50) profile = "SCALPER (Range Trade)";
+            else if(probs.bull > 60 || probs.bear > 60) {
+                if(d.adx > 30) profile = "TREND TAKİPÇİSİ (Swing)";
+                else profile = "GÜN İÇİ AL-SAT (Intraday)";
+            }
+
+            // 5. Reason Generator (Explainable AI)
+            let reasons = [];
+            if(d.price > d.vwap) reasons.push(`Fiyat ${genTermLink('VWAP', d.vwap)} üzerinde, alıcılar güçlü.`);
+            else reasons.push(`Fiyat ${genTermLink('VWAP', d.vwap)} altında, satıcılar baskın.`);
+            
+            if(d.adx > 25) reasons.push(`${genTermLink('ADX', d.adx)} trendin güçlü olduğunu teyit ediyor.`);
+            else reasons.push(`${genTermLink('ADX', d.adx)} zayıf, piyasa kararsız.`);
+
+            if(d.bb && d.bb.width*100 < 1.5) reasons.push(`⚠️ ${genTermLink('Volatility', 0)} sıkışması var, sert hareket gelebilir.`);
+
+            const ctxRSI = getTermContext('RSI', d.rsi);
+            reasons.push(ctxRSI.text);
+
+            // RENDER HTML
+            container.innerHTML = `
+                <div class="ai-brain-panel p-4 rounded-lg text-xs relative">
+                    <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-[var(--neon-purple)] to-transparent opacity-50"></div>
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="flex flex-col">
+                            <h3 class="font-black text-sm text-[var(--neon-blue)] flex items-center gap-2">
+                                🧠 AI META-ANALİZ
+                            </h3>
+                            <span class="text-[9px] text-dim mt-1">Süper-Bilişsel Yorumlama v53</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-[9px] text-dim uppercase">Güven Seviyesi</div>
+                            <div class="font-bold ${confColor}">${confidence} (%${confScore})</div>
+                        </div>
+                    </div>
+
+                    <!-- Scenarios -->
+                    <div class="mb-4 space-y-2">
+                        <div>
+                            <div class="flex justify-between text-[9px] font-bold text-dim mb-1">
+                                <span>BOĞA SENARYOSU 📈</span> <span>%${probs.bull.toFixed(0)}</span>
+                            </div>
+                            <div class="scenario-bar-container">
+                                <div class="scenario-fill bg-[var(--up-color)]" style="width: ${probs.bull}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[9px] font-bold text-dim mb-1">
+                                <span>AYI SENARYOSU 📉</span> <span>%${probs.bear.toFixed(0)}</span>
+                            </div>
+                            <div class="scenario-bar-container">
+                                <div class="scenario-fill bg-[var(--down-color)]" style="width: ${probs.bear}%"></div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <div class="flex-1">
+                                <div class="flex justify-between text-[9px] font-bold text-dim mb-1">
+                                    <span>YATAY ⏸️</span> <span>%${probs.range.toFixed(0)}</span>
+                                </div>
+                                <div class="scenario-bar-container">
+                                    <div class="scenario-fill bg-[var(--accent-color)]" style="width: ${probs.range}%"></div>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between text-[9px] font-bold text-dim mb-1">
+                                    <span>TUZAK ⚠️</span> <span>%${probs.fake.toFixed(0)}</span>
+                                </div>
+                                <div class="scenario-bar-container">
+                                    <div class="scenario-fill bg-purple-500" style="width: ${probs.fake}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profil & Reasons -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-[rgba(255,255,255,0.1)] pt-3">
+                        <div>
+                            <div class="text-[9px] text-dim uppercase mb-1">ÖNERİLEN PROFİL</div>
+                            <div class="text-xs font-black text-[var(--neon-blue)] border border-[var(--neon-blue)] rounded px-2 py-1 inline-block bg-[rgba(0,242,255,0.05)]">
+                                ${profile}
+                            </div>
+                            <div class="mt-3 text-[9px] text-dim leading-relaxed">
+                                <span class="text-[var(--accent-color)] font-bold">⚠️ SÖZLÜK:</span>
+                                Altı çizili teknik terimlere tıklayarak detaylı açıklama ve analizdeki önemini görebilirsiniz.
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-dim uppercase mb-2">KARAR GEREKÇELERİ</div>
+                            <ul class="space-y-1.5 list-disc list-inside text-[10px] text-[var(--text-primary)] opacity-90">
+                                ${reasons.map(r => `<li>${r}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- COMMON ---
+        function calculateRisk() {
+            const b = parseFloat(document.getElementById('calc-balance').value), r = parseFloat(document.getElementById('calc-risk').value);
+            const e = parseFloat(document.getElementById('calc-entry').value), s = parseFloat(document.getElementById('calc-stop').value);
+            const lev = parseFloat(document.getElementById('calc-lev').value) || 1; 
+            
+            if(!b || !e || !s) return alert("Alanları doldurun.");
+            const riskAmt = b * (r/100), diff = Math.abs(e-s);
+            if(diff===0) return alert("Hatalı giriş.");
+            const qty = riskAmt/diff;
+            
+            const positionSize = qty * e;
+            const marginNeeded = positionSize / lev;
+
+            document.getElementById('res-risk-usd').innerText = `$${riskAmt.toFixed(2)}`;
+            document.getElementById('res-qty').innerText = `${qty.toFixed(4)}`;
+            document.getElementById('res-total').innerText = `$${positionSize.toFixed(2)}`;
+            
+            document.getElementById('res-note').innerText = `${lev}x Kaldıraç ile Gerekli Marjin: $${marginNeeded.toFixed(2)}`;
+            
+            document.getElementById('calc-result').classList.remove('hidden');
+        }
+
+        function loadChart(sym) {
+            document.getElementById('chart-container').innerHTML = ""; 
+            const isLight = document.body.classList.contains('light-mode');
+            new TradingView.widget({ "autosize": true, "symbol": "BINANCE:" + sym, "interval": state.currentTf, "timezone": "Europe/Istanbul", "theme": isLight?'light':'dark', "style": "1", "locale": "tr", "toolbar_bg": isLight?'#ffffff':'#05070a', "enable_publishing": false, "hide_top_toolbar": true, "hide_legend": true, "container_id": "chart-container", "overrides": { "paneProperties.background": isLight?'#ffffff':'#05070a' } });
+        }
+        function startTickerWS() {
+            if(state.wsTicker) state.wsTicker.close();
+            state.wsTicker = new WebSocket('wss://stream.binance.com:9443/ws/!ticker@arr');
+            state.wsTicker.onopen = () => { document.getElementById('conn-status').className="w-2 h-2 rounded-full bg-[var(--up-color)] shadow-[0_0_5px_var(--up-color)]"; document.getElementById('conn-text').innerText="ONLINE"; document.getElementById('conn-text').style.color="var(--up-color)"; };
+            state.wsTicker.onmessage = (e) => {
+                if(!state.isPageVisible) return;
+                const data = JSON.parse(e.data), updates = new Map(); data.forEach(t => updates.set(t.s, t));
+                config.symbols.forEach(sym => {
+                    const t = updates.get(sym);
+                    if(t) {
+                        const p = parseFloat(t.c), ch = parseFloat(t.P);
+                        const elP = document.getElementById(`p-${sym}`), elC = document.getElementById(`c-${sym}`);
+                        if(elP) { elP.innerText = formatPrice(p); elC.innerText = ch.toFixed(2)+"%"; elC.className = `text-[9px] font-bold ${ch>=0 ? 'text-[var(--up-color)]':'text-[var(--down-color)]'}`; }
+                        if(state.currentSym === sym) { document.getElementById('sym-price').innerText = formatPrice(p); document.getElementById('sym-change').innerText = ch.toFixed(2)+"%"; document.getElementById('sym-change').style.color = ch>=0 ? "var(--up-color)" : "var(--down-color)"; document.title = `${formatPrice(p)} ${sym}`; }
+                    }
+                });
+            };
+            state.wsTicker.onclose = () => setTimeout(startTickerWS, 5000);
+        }
+        function startActiveWS(sym) {
+            if(state.wsActive) state.wsActive.close();
+            state.wsActive = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${sym.toLowerCase()}@trade/${sym.toLowerCase()}@depth20@100ms`);
+            state.wsActive.onmessage = (e) => {
+                if(!state.isPageVisible) return;
+                const msg = JSON.parse(e.data), type = msg.stream.split('@')[1];
+                if(type === 'trade') state.tradeBuffer.push(msg.data);
+                else if(type.startsWith('depth')) renderDepth(msg.data);
+            };
+        }
+        function processTradeBuffer() {
+            if(state.tradeBuffer.length === 0) return;
+            const list = document.getElementById('trade-list'), fragment = document.createDocumentFragment();
+            state.tradeBuffer.forEach(t => {
+                const price = parseFloat(t.p), usd = price * parseFloat(t.q), isBuy = !t.m;
+                if(isBuy) sessionStats.buyVol += usd; else sessionStats.sellVol += usd;
+                if(usd >= 30000) showWhaleAlert(t.s, usd, isBuy);
+            });
+            updateSessionUI();
+            state.tradeBuffer.slice(-20).reverse().forEach(t => {
+                const price = parseFloat(t.p), usd = price * parseFloat(t.q), isBuy = !t.m;
+                const row = document.createElement('div');
+                row.className = `flex justify-between px-4 py-0.5 text-[10px] mono border-b border-[var(--border-color)] hover:bg-[var(--bg-hover)]`;
+                row.style.color = isBuy ? "var(--up-color)" : "var(--down-color)";
+                row.innerHTML = `<span>${formatPrice(price)}</span><span class="${usd>10000?'font-bold':''}">${usdFmt.format(usd)}</span><span class="text-dim opacity-70">${new Date(t.T).toLocaleTimeString().split(' ')[0]}</span>`;
+                fragment.appendChild(row);
+            });
+            list.prepend(fragment);
+            while(list.children.length > 50) list.lastChild.remove();
+            state.tradeBuffer = [];
+        }
+        function renderDepth(d) {
+            let maxVol = 0; const process = (arr) => arr.map(i => { const v = parseFloat(i[0]) * parseFloat(i[1]); if(v>maxVol) maxVol = v; return {p: parseFloat(i[0]), v}; });
+            const bids = process(d.bids), asks = process(d.asks);
+            const row = (i, type) => `<div class="depth-row"><div class="${type==='bid'?'depth-bg-bid':'depth-bg-ask'}" style="width:${(i.v/maxVol)*100}%"></div><span style="color:${type==='bid'?'var(--up-color)':'var(--down-color)'}">${formatPrice(i.p)}</span><span class="text-dim">${(i.v/1000).toFixed(1)}k</span></div>`;
+            document.getElementById('depth-bids').innerHTML = bids.map(i=>row(i,'bid')).join('');
+            document.getElementById('depth-asks').innerHTML = asks.map(i=>row(i,'ask')).join('');
+        }
+        function showWhaleAlert(sym, usd, isBuy) {
+            const container = document.getElementById('whale-alert-container'), el = document.createElement('div');
+            el.className = `p-3 rounded shadow-lg border-l-4 font-bold text-xs pointer-events-auto backdrop-blur-md transition-all transform translate-x-full opacity-0 glass-panel`;
+            el.style.borderLeftColor = isBuy ? "var(--up-color)" : "var(--down-color)"; el.style.color = "var(--text-primary)"; el.style.boxShadow = "0 4px 12px rgba(0,0,0,0.5)";
+            el.innerHTML = `<div class="flex items-center justify-between gap-3"><div class="text-xl">${isBuy ? '🐳' : '🐻'}</div><div class="flex-1"><div class="text-[9px] text-dim uppercase">BALİNA HAREKETİ</div><div class="text-sm font-black">${sym}</div><div style="color:${isBuy?'var(--up-color)':'var(--down-color)'}" class="glow-text">${usdFmt.format(usd)} ${isBuy?'ALIM':'SATIŞ'}</div></div><div class="text-[9px] text-dim">${new Date().toLocaleTimeString()}</div></div>`;
+            container.appendChild(el); requestAnimationFrame(() => el.classList.remove('translate-x-full', 'opacity-0')); playTone(isBuy ? 800 : 200, 0.3);
+            setTimeout(() => { el.classList.add('translate-x-full', 'opacity-0'); setTimeout(() => el.remove(), 500); }, 6000);
+        }
+        function playTone(f, d) { if(!state.audioCtx) return; const o = state.audioCtx.createOscillator(), g = state.audioCtx.createGain(); o.frequency.value = f; g.gain.value = 0.05; o.connect(g); g.connect(state.audioCtx.destination); o.start(); o.stop(state.audioCtx.currentTime + d); }
+        function addCoin() { const c = prompt("Eklenecek Coin:"); if(c && !config.symbols.includes(c.toUpperCase())) { config.symbols.unshift(c.toUpperCase()); localStorage.setItem('quantumPortfolio_v51', JSON.stringify(config.symbols)); renderCoinList(); startTickerWS(); } }
+        function filterCoins() { renderCoinList(document.getElementById('coin-search').value); }
+        function setTf(tf) { state.currentTf = tf; document.querySelectorAll('button[id^="tf-"]').forEach(b => b.classList.remove('active', 'active-coin')); document.getElementById('tf-'+tf).classList.add('active', 'active-coin'); loadChart(state.currentSym); fetchAIHistory(state.currentSym); }
+        function switchTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById('tab-'+id).classList.add('active'); const btns=document.querySelectorAll('.tab-btn'); btns.forEach(btn=>{if(btn.getAttribute('onclick').includes(id))btn.classList.add('active')}); }
+        document.getElementById('audio-btn').addEventListener('click', () => { const btn = document.getElementById('audio-btn'); if(!state.audioCtx) { state.audioCtx = new (window.AudioContext || window.webkitAudioContext)(); btn.innerHTML = `<span style="color:var(--up-color)">🔊</span> AÇIK`; playTone(600, 0.1); } else { state.audioCtx.close(); state.audioCtx = null; btn.innerHTML = `<span>🔇</span> SES`; } });
+        init();
+    </script>
+</body>
+</html>
